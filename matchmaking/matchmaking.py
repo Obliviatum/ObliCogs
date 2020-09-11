@@ -24,7 +24,7 @@ class PluralDict(dict):
 
 class Matchmaking(commands.Cog):
 
-	__version__ = "1.0.0"
+	__version__ = "1.0.1"
 	__author__ = "Obliviatum"
 
 	def __init__(self, bot: Red):
@@ -108,7 +108,7 @@ class Matchmaking(commands.Cog):
 		role = discord.utils.find(lambda r: r.id == role_id, ctx.guild.roles)
 
 		if role is None:
-			# This role doesn't exist anymore
+			# if role is None then it doesn't exist anymore
 			return await ctx.send('Well, I found the game, but the corresponding @role doesn\'t exists anymore')
 
 		#--------------------Mention players for matchmaking--------------------
@@ -132,7 +132,7 @@ class Matchmaking(commands.Cog):
 	@matchmaking.command(name='del', aliases=['delete'])
 	@checks.guildowner_or_permissions(administrator=True)
 	async def delete(self, ctx: commands.Context, *, game_name:str):
-		"""Delete a game with corresponding @role to a list."""
+		"""Delete a game from the list."""
 		games = await self.get_games(ctx)
 		if game_name not in games:
 			return await ctx.send(f'The game `{game_name}` doesn\'t exists in the list.')
