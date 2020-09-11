@@ -55,7 +55,7 @@ class Matchmaking(commands.Cog):
 	@commands.guild_only()
 	# @commands.bot_has_permissions(mention_everyone=True)
 	async def matchmaking(self, ctx: commands.Context, *, game_name:str=None):
-		"""Let players now you wanna play a certian multiplater game."""
+		"""Let players know you wanna play a certian multiplater game."""
 
 		#------------------Check if bot got permission to mention---------------
 		if not ctx.channel.permissions_for(ctx.me).mention_everyone:
