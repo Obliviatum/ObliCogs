@@ -1,21 +1,10 @@
 # ObliCogs
-Custom made Cog for [Red-DiscordBot V3](https://github.com/Cog-Creators/Red-DiscordBot/tree/V3/develop).
+Custom made Cogs for [Red-DiscordBot V3](https://github.com/Cog-Creators/Red-DiscordBot/tree/V3/develop).
+To add this repo to your instance please do: `[p]repo add ObliCogs https://github.com/Obliviatum/ObliCogs/`
 
-## About Cog
+## About Cogs
+Once you have added ObliCogs to your instance you're free to add the following cogs.
 
-### Install
-To add this cog to your instance, please run: 
-```
-[p]repo add ObliCogs https://github.com/Obliviatum/ObliCogs/
-[p]cog install ObliCogs matchmaking
-[p]load matchmaking
-```
-
-### Commands 
-| Name                                   | Description                                                     |
-|----------------------------------------|-----------------------------------------------------------------|
-| [p]matchmaking add <@role> <game_name> | Assigns a role to a game name.                                  |
-| [p]matchmaking del <game_name>         | Deletes game                                                    |
-| [p]matchmaking cooldown <cooldown_int> game_name | Sets the cooldown for a specific game                 |
-| [p]matchmaking <game_name>             | Asks bot to @role asking users to jump into the specified game. |
-| [p]mm                                  | [p]mm is an alias of [p]matchmaking                             |
+### Matchmaking
+This cog allows members to ping other members for a certain game @role and limits the amount usage with a given cooldown.
+`[p]cog install ObliCogs matchmaking`
