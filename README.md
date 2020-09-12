@@ -18,3 +18,4 @@ To add this cog to your instance, please run:
 | [p]matchmaking del <game_name>         | Deletes game                                                    |
 | [p]matchmaking cooldown <cooldown_int> game_name | Sets the cooldown for a specific game                 |
 | [p]matchmaking <game_name>             | Asks bot to @role asking users to jump into the specified game. |
+| [p]mm                                  | [p]mm is an alias of [p]matchmaking                             |
