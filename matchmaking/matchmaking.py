@@ -49,7 +49,7 @@ class Matchmaking(commands.Cog):
 		if not ctx.channel.permissions_for(ctx.me).mention_everyone:
 			return await ctx.send('I require the "Mention Everyone" permission to execute that command')
 
-		#------------Locking command at guild level to unable spam ping---------
+		#------------Locking command at guild level to disable spam ping---------
 		guild_id = str(ctx.guild.id)
 		if self.lock_command(ctx):
 			return await ctx.send('Someone else is current using this command. Please wait and retry soon.')
@@ -100,7 +100,7 @@ class Matchmaking(commands.Cog):
 		"""Add a game with corresponding @role to a list."""
 		games = await self.get_games(ctx)
 		if game_name in games:
-			return await ctx.send(f'The game `{game_name}` allready has been added to list.')
+			return await ctx.send(f'The game `{game_name}` already has been added to list.')
 
 		await self.add_game(ctx, game_name, role)
 		await ctx.tick()
@@ -126,7 +126,7 @@ class Matchmaking(commands.Cog):
 			return await self.senf_setting_games(ctx)
 
 		if not game_name:
-			return await ctx.send(f'You dindn\'t give me a name of a game. Please `{ctx.prefix}cooldown {cooldown} <game_name>`')
+			return await ctx.send(f'You didn\'t give me a name of a game. Please `{ctx.prefix}cooldown {cooldown} <game_name>`')
 
 		games = await self.get_games(ctx)
 		if game_name not in games:
@@ -174,14 +174,14 @@ class Matchmaking(commands.Cog):
 			return
 
 		# Found a match.
-		msg = await ctx.send(f'I can\'t find a game named `{game_name}`.\nDid you mean `{match[0]}`?')
+		msg = await ctx.send(f'I can\'t find a game called `{game_name}`.\nDid you mean `{match[0]}`?')
 		start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
 
 		try: # Wait for a reaction on question
 			pred = ReactionPredicate.yes_or_no(msg, ctx.author)
 			await ctx.bot.wait_for("reaction_add", check=pred, timeout=15)
 		except asyncio.TimeoutError:
-			await ctx.send("You didn\'t react on time, canceling.")
+			await ctx.send("You didn\'t react in time, canceling.")
 
 		try: # Delete reactions from question message
 			if ctx.channel.permissions_for(ctx.me).manage_messages:
@@ -200,7 +200,7 @@ class Matchmaking(commands.Cog):
 
 		#---------------------Check if there is a list of game------------------
 		if games is None:
-			return await ctx.send("There are current no games added to the list.")
+			return await ctx.send("There are currently no games on the list.")
 
 		#---------------------Create a game list message------------------------
 		name_games = [n for n in games.keys()]
