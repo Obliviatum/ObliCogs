@@ -24,99 +24,75 @@ class PluralDict(dict):
 
 class Matchmaking(commands.Cog):
 
-	__version__ = "1.0.1"
+	__version__ = "1.0.2"
 	__author__ = "Obliviatum"
 
 	def __init__(self, bot: Red):
 		self.bot = bot
-		default_cooldown = 900 # 900 = 15 minutes
+		self.default_cooldown = 900 # 900 = 15 minutes
 
 		# Using Red Config to store Data
 		self.config = Config.get_conf(self, identifier=424914245973442562, force_registration=True)
-		guild_default = {
-			"games":{},
-			"cooldown":default_cooldown,
-		}
-		self.config.register_guild(**guild_default)
-
-		member_default = {
-			"wait_until":0
-		}
-		self.config.register_member(**member_default)
+		self.config.register_guild(games={})
 
 		# Using this to gain data accessing performance via RAM
 		self.games = {}
-		self.cooldown = {}
-		self.wait_until = {}
+		self.lockcommand = {}
 
-
-	#==============================Command Function=============================
+	#=============================Command Function==============================
 	@commands.group(aliases=['mm'], invoke_without_command=True)
 	@commands.guild_only()
 	# @commands.bot_has_permissions(mention_everyone=True)
 	async def matchmaking(self, ctx: commands.Context, *, game_name:str=None):
 		"""Let players know you wanna play a certian multiplater game."""
-
-		#------------------Check if bot got permission to mention---------------
+		#----------------Check if bot got permission to mention-----------------
 		if not ctx.channel.permissions_for(ctx.me).mention_everyone:
 			return await ctx.send('I require the "Mention Everyone" permission to execute that command')
 
+		#------------Locking command at guild level to unable spam ping---------
+		guild_id = str(ctx.guild.id)
+		if self.lock_command(ctx):
+			return await ctx.send('Someone else is current using this command. Please wait and retry soon.')
+
 		if game_name is None:
 			# Send a list of games.
+			self.unlock_command(ctx)
 			return await self.send_game_list(ctx)
-
-		#-------------------Check if member is on Cooldown----------------------
-		wait_until = await self.get_wait_until(ctx)
-		if wait_until > time.time():
-			return await self.send_cooldown_message(ctx, wait_until)
 
 		#-----------------------Check if game in list---------------------------
 		guild_group = self.config.guild(ctx.guild)
 		games = await guild_group.games()
-		role_id = games.get(game_name, False)
 
-		if not role_id:
-			# Couldn't find the game in the list, Trying to find a close match.
-			match = get_close_matches(game_name, games.keys(), 1, 0.3)
-			if not match:
-				# No match was found. Returing a list of games.
-				return await self.send_game_list(ctx)
+		game_name = game_name if game_name in games else await self.find_game_name(ctx, games, game_name)
 
-			# Found a match.
-			msg = await ctx.send(f'I can\'t find a game named `{game_name}`.\nDid you mean `{match[0]}`?')
-			start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
+		if game_name is None:
+			# Couldn't find the game or a close match in the list.
+			self.unlock_command(ctx)
+			return
 
-			try: # Wait for a reaction on question
-				pred = ReactionPredicate.yes_or_no(msg, ctx.author)
-				await ctx.bot.wait_for("reaction_add", check=pred, timeout=15)
-			except asyncio.TimeoutError:
-				await ctx.send("You didn\'t react on time, canceling.")
+		#-----------------Check if game command is on Cooldown------------------
+		wait_until = await self.get_wait_until(ctx, game_name)
+		if wait_until > time.time():
+			self.unlock_command(ctx)
+			return await self.send_cooldown_message(ctx, game_name, wait_until)
 
-			try: # Delete reactions from question message
-				if ctx.channel.permissions_for(ctx.me).manage_messages:
-					await msg.clear_reactions()
-			except:
-				pass
-
-			if pred.result is not True:
-				return # User didn't responded with tick
-
-			game_name = match[0]
-			role_id = games.get(game_name, False)
+		role_id = games.get(game_name).get('role_id')
 
 		#---------------------Get role_object from game-------------------------
 		role = discord.utils.find(lambda r: r.id == role_id, ctx.guild.roles)
 
 		if role is None:
 			# if role is None then it doesn't exist anymore
+			self.unlock_command(ctx)
 			return await ctx.send('Well, I found the game, but the corresponding @role doesn\'t exists anymore')
 
 		#--------------------Mention players for matchmaking--------------------
-		await self.set_wait_until(ctx)
+		await self.set_wait_until(ctx, game_name)
 		await ctx.send(
 			f'{ctx.author.mention} is looking to play {game_name}! Hop in {role.mention}!',
 			allowed_mentions=discord.AllowedMentions(roles=True)
 		)
+		self.unlock_command(ctx)
 
 	@matchmaking.command()
 	@checks.guildowner_or_permissions(administrator=True)
@@ -135,43 +111,140 @@ class Matchmaking(commands.Cog):
 		"""Delete a game from the list."""
 		games = await self.get_games(ctx)
 		if game_name not in games:
-			return await ctx.send(f'The game `{game_name}` doesn\'t exists in the list.')
+			return await ctx.send(f'The game `{game_name}` doesn\'t exists on the list.')
 
 		await self.del_game(ctx, game_name)
 		await ctx.tick()
 
 	@matchmaking.command()
 	@checks.guildowner_or_permissions(administrator=True)
-	async def cooldown(self, ctx: commands.Context, cooldown:int=False):
-		"""Manage the duration for command cooldown in seconds"""
-		pref_cooldown = await self.get_cooldown(ctx)
+	async def cooldown(self, ctx: commands.Context, cooldown:int=None, *, game_name:str=None):
+		"""Manage the duration for command cooldown in seconds for each game"""
+
+		if (cooldown and game_name) is None:
+			# retuen list of games and there info
+			return await self.senf_setting_games(ctx)
+
+		if not game_name:
+			return await ctx.send(f'You dindn\'t give me a name of a game. Please `{ctx.prefix}cooldown {cooldown} <game_name>`')
+
+		games = await self.get_games(ctx)
+		if game_name not in games:
+			return await ctx.send(f'The game `{game_name}` doesn\'t exists on the list.')
+
+		pref_cooldown = await self.get_cooldown(ctx, game_name)
 		if not cooldown:
 			time_fmt = self.time_format(pref_cooldown)
 			return await ctx.send(f'The current cooldown is set to: {time_fmt}')
 
-		await self.set_cooldown(ctx, cooldown)
+		await self.set_cooldown(ctx, game_name, cooldown)
 		time_fmt = self.time_format(cooldown)
 		await ctx.send(f'The cooldown been changed to: {time_fmt}')
 
+	@matchmaking.command()
+	@checks.guildowner_or_permissions(administrator=True)
+	async def cleardata(self, ctx: commands.Context):
+		"""This will remove all the saved data"""
+		await self.config.clear_all()
+		self.games = {}
+		await ctx.tick()
+
+	@matchmaking.command()
+	@checks.guildowner_or_permissions(administrator=True)
+	async def resetcooldown(self, ctx: commands.Context, *, game_name:str=None):
+		"""This will reset cooldown for a given game or all games if no game is given"""
+		games = await self.get_games(ctx)
+		if game_name is not None:
+			if game_name not in games:
+				return await ctx.send(f'The game `{game_name}` doesn\'t exists on the list.')
+			await self.set_wait_until(ctx, game_name, 0)
+			await ctx.tick()
+			return
+
+		for game_name in games:
+			await self.set_wait_until(ctx, game_name, 0)
+		await ctx.tick()
 
 	#===========================Fucntion to haddle stuff========================
+	async def find_game_name(self, ctx, games, game_name):
+		match = get_close_matches(game_name, games.keys(), 1, 0.3)
+		if not match:
+			# No match was found. Returing a list of games.
+			await self.send_game_list(ctx)
+			return
+
+		# Found a match.
+		msg = await ctx.send(f'I can\'t find a game named `{game_name}`.\nDid you mean `{match[0]}`?')
+		start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
+
+		try: # Wait for a reaction on question
+			pred = ReactionPredicate.yes_or_no(msg, ctx.author)
+			await ctx.bot.wait_for("reaction_add", check=pred, timeout=15)
+		except asyncio.TimeoutError:
+			await ctx.send("You didn\'t react on time, canceling.")
+
+		try: # Delete reactions from question message
+			if ctx.channel.permissions_for(ctx.me).manage_messages:
+				await msg.clear_reactions()
+		except:
+			pass
+
+		if pred.result is not True:
+			return # User didn't responded with tick
+
+		game_name = match[0]
+		return game_name
+
 	async def send_game_list(self, ctx):
-		guild_group = self.config.guild(ctx.guild)
-		games = await guild_group.games()
+		games = await self.get_games(ctx)
 
 		#---------------------Check if there is a list of game------------------
-		if not games:
+		if games is None:
 			return await ctx.send("There are current no games added to the list.")
 
 		#---------------------Create a game list message------------------------
 		name_games = [n for n in games.keys()]
 		await ctx.send('>>> **Games list:**\n' + '\n'.join(name_games))
 
-	async def send_cooldown_message(self, ctx, wait_until):
+	async def senf_setting_games(self, ctx):
+		games = await self.get_games(ctx)
+
+		#---------------------Check if there is a list of game------------------
+		if games is None:
+			return await ctx.send("There are current no games added to the list.")
+
+		#---------------------Create a game ifno message------------------------
+		txt = '>>> **Games settings list:**\n'
+		for game_name, info in games.items():
+			role_id = info['role_id']
+			cooldown = info['cooldown']
+			wait_until = info['wait_until']
+			seconds_left = round(wait_until - time.time())
+			time_fmt = self.time_format(seconds_left)
+			cooldown_fmt = self.time_format(cooldown)
+
+			role = discord.utils.find(lambda r: r.id == role_id, ctx.guild.roles)
+			txt += f'`{game_name}` | {role.mention} | {cooldown_fmt} # {time_fmt}\n'
+
+		await ctx.send(txt)
+
+
+	async def send_cooldown_message(self, ctx, game_name, wait_until):
 		now = time.time()
 		seconds_left = round(wait_until - now)
 		time_fmt = self.time_format(seconds_left)
-		await ctx.send(f'Sorry {ctx.author.mention}, but you have to wait {time_fmt} before you can use this command again.')
+		await ctx.send(f'Sorry {ctx.author.mention}, but this command is currently on cooldown for `{game_name}`. You can try again in {time_fmt}.')
+
+	def lock_command(self, ctx):
+		guild_id = str(ctx.guild.id)
+		if self.lockcommand.get(guild_id, False):
+			return True
+		self.lockcommand.update({guild_id:True})
+		return False
+
+	def unlock_command(self, ctx):
+		guild_id = str(ctx.guild.id)
+		self.lockcommand.update({guild_id:False})
 
 	@staticmethod
 	def time_format(seconds):
@@ -203,12 +276,12 @@ class Matchmaking(commands.Cog):
 	#-----------------------------------Games-----------------------------------
 	async def get_games(self, ctx):
 		guild_id = str(ctx.guild.id)
-		games = self.games.get(guild_id, False)
+		games = self.games.get(guild_id)
 
-		if not games:
+		if games is None:
 			guild_group = self.config.guild(ctx.guild)
 			games = await guild_group.games()
-			self.games[guild_id] = games
+			self.games.update({guild_id:games})
 
 		return games
 
@@ -216,9 +289,14 @@ class Matchmaking(commands.Cog):
 		guild_id = str(ctx.guild.id)
 		games = await self.get_games(ctx)
 
-		games[game_name] = role.id
+		games[game_name] = {
+			'role_id':role.id,
+			'cooldown':self.default_cooldown,
+			'wait_until':0
+		}
+
 		await self.config.guild(ctx.guild).games.set(games)
-		self.games[guild_id] = games
+		self.games.update({guild_id:games})
 
 	async def del_game(self, ctx, game_name):
 		guild_id = str(ctx.guild.id)
@@ -230,53 +308,49 @@ class Matchmaking(commands.Cog):
 			pass
 
 		await self.config.guild(ctx.guild).games.set(games)
-		self.games[guild_id] = games
+		self.games.update({guild_id:games})
 
 	#---------------------------------Cooldown----------------------------------
-	async def get_cooldown(self, ctx):
+	async def get_cooldown(self, ctx, game_name):
 		guild_id = str(ctx.guild.id)
-		cooldown = self.cooldown.get(guild_id, False)
+		cooldown = self.games.get(guild_id, {}).get(game_name, {}).get('cooldown')
 
-		if not cooldown:
-			guild_group = self.config.guild(ctx.guild)
-			cooldown = await guild_group.cooldown()
-			self.cooldown[guild_id] = cooldown
+		if cooldown is None:
+			games = await self.get_games(ctx)
+			cooldown = games.get(game_name).get('cooldown')
 
 		return cooldown
 
-	async def set_cooldown(self, ctx, cooldown):
+	async def set_cooldown(self, ctx, game_name, cooldown):
 		guild_id = str(ctx.guild.id)
+		games = await self.get_games(ctx)
 
-		await self.config.guild(ctx.guild).cooldown.set(cooldown)
-		self.cooldown[guild_id] = cooldown
+		games[game_name]['cooldown'] = cooldown
+
+		await self.config.guild(ctx.guild).games.set(games)
+		self.games.update({guild_id:games})
 
 	#---------------------------------Wait Until--------------------------------
-	async def get_wait_until(self, ctx):
+	async def get_wait_until(self, ctx, game_name):
 		guild_id = str(ctx.guild.id)
-		member_id = str(ctx.author.id)
-
-		wait_until = self.wait_until.get(guild_id, {}).get(member_id, None)
+		wait_until = self.games.get(guild_id, {}).get(game_name, {}).get('wait_until')
 
 		if wait_until is None:
-			member_group = self.config.member(ctx.author)
-			wait_until = await member_group.wait_until()
-
-			if guild_id not in self.wait_until:
-				self.wait_until[guild_id] = {}
-			self.wait_until[guild_id][member_id] = wait_until
+			games = await self.get_games(ctx)
+			wait_until = games.get(game_name, {}).get('wait_until', 0)
 
 		return wait_until
 
-	async def set_wait_until(self, ctx):
+	async def set_wait_until(self, ctx, game_name, cooldown=None):
 		guild_id = str(ctx.guild.id)
-		member_id = str(ctx.author.id)
+		games = await self.get_games(ctx)
 
+		# Calculate wait until time
 		now = time.time()
-		cooldown = await self.get_cooldown(ctx)
+		cooldown = cooldown if cooldown is not None else await self.get_cooldown(ctx, game_name)
 		wait_until = round(now + cooldown)
 
-		await self.config.member(ctx.author).wait_until.set(wait_until)
+		games[game_name]['wait_until'] = wait_until
 
-		if guild_id not in self.wait_until:
-			self.wait_until[guild_id] = {}
-		self.wait_until[guild_id][member_id] = wait_until
+		await self.config.guild(ctx.guild).games.set(games)
+		self.games.update({guild_id:games})
