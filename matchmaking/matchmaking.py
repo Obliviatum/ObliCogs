@@ -24,7 +24,7 @@ class PluralDict(dict):
 
 class Matchmaking(commands.Cog):
 
-	__version__ = "1.0.2"
+	__version__ = "1.0.3"
 	__author__ = "Obliviatum"
 
 	def __init__(self, bot: Red):
