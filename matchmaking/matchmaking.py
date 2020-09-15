@@ -123,7 +123,7 @@ class Matchmaking(commands.Cog):
 
 		if (cooldown and game_name) is None:
 			# retuen list of games and there info
-			return await self.senf_setting_games(ctx)
+			return await self.send_setting_games(ctx)
 
 		if not game_name:
 			return await ctx.send(f'You didn\'t give me a name of a game. Please `{ctx.prefix}cooldown {cooldown} <game_name>`')
@@ -206,7 +206,7 @@ class Matchmaking(commands.Cog):
 		name_games = [n for n in games.keys()]
 		await ctx.send('>>> **Games list:**\n' + '\n'.join(name_games))
 
-	async def senf_setting_games(self, ctx):
+	async def send_setting_games(self, ctx):
 		games = await self.get_games(ctx)
 
 		#---------------------Check if there is a list of game------------------
