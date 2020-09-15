@@ -12,6 +12,9 @@ This cog allows members to ping other members for a certain game @role and limit
 
 > _Credits to **@XargsUK**_
 
+### Roleshop 🚧
 
+<details><summary>This cog will.</summary>
+![Roleshop_Example](https://raw.githubusercontent.com/Obliviatum/ObliCogs/master/screenshots/roleshop/example_roleshop_message.PNG)</details>
 
 _🚧 Inconstruction | 🆕 New_
