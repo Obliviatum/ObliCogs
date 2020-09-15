@@ -14,4 +14,4 @@ This cog allows members to ping other members for a certain game @role and limit
 
 
 
-_🏗️ Inconstruction | 🆕 New_
+_🚧 Inconstruction | 🆕 New_
