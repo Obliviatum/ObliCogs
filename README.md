@@ -3,7 +3,7 @@ Custom made Cogs for [Red-DiscordBot V3](https://github.com/Cog-Creators/Red-Dis
 To add this repo to your instance please do: `[p]repo add ObliCogs https://github.com/Obliviatum/ObliCogs/`
 
 ## About Cogs
-Once you have added ObliCogs to your instance you're free to add the following cogs.
+Once you have added ObliCogs to your instance you're free to install the following cogs.
 
 ### Matchmaking
 This cog allows members to ping other members for a certain game @role and limits the amount usage with a given cooldown.
