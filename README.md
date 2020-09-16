@@ -13,6 +13,6 @@ Once you have added ObliCogs to your instance you're free to install the followi
 ### Roleshop 🚧
 > This cog create a role shop message where members can react on to buy a role with there credits. <br />
 `[p]cog install ObliCogs roleshop` <br />
-<details><summary>Example Image</summary> <img src="screenshots/roleshop/example_roleshop_message.PNG"/> </details>
+<details><summary>Example Image</summary> <img src="screenshots/roleshop/example_roleshop_message.PNG" width="380" /> </details>
 
 _🚧 Inconstruction | 🆕 New_
