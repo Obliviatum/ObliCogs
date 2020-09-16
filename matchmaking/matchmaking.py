@@ -24,7 +24,7 @@ class PluralDict(dict):
 
 class Matchmaking(commands.Cog):
 
-	__version__ = "1.0.3"
+	__version__ = "1.0.4"
 	__author__ = "Obliviatum"
 
 	def __init__(self, bot: Red):
@@ -33,21 +33,25 @@ class Matchmaking(commands.Cog):
 
 		# Using Red Config to store Data
 		self.config = Config.get_conf(self, identifier=424914245973442562, force_registration=True)
-		self.config.register_guild(games={})
+		self.config.register_guild(games={}, check_vc=None)
 
 		# Using this to gain data accessing performance via RAM
 		self.games = {}
+		self.check_vc = {}
 		self.lockcommand = {}
 
 	#=============================Command Function==============================
 	@commands.group(aliases=['mm'], invoke_without_command=True)
 	@commands.guild_only()
-	# @commands.bot_has_permissions(mention_everyone=True)
 	async def matchmaking(self, ctx: commands.Context, *, game_name:str=None):
 		"""Let players know you wanna play a certain multiplayer game."""
 		#----------------Check if bot got permission to mention-----------------
 		if not ctx.channel.permissions_for(ctx.me).mention_everyone:
-			return await ctx.send('I require the "Mention Everyone" permission to execute that command')
+			return await ctx.send('I require the "Mention Everyone" permission to execute that command.')
+
+		#----------------Check if member is in Voice Channel--------------------
+		if await self.get_check_vc(ctx) and ctx.author.voice is None:
+			return await ctx.send('You must first join a voice channel before you can use this command.')
 
 		#------------Locking command at guild level to disable spam ping---------
 		guild_id = str(ctx.guild.id)
@@ -164,6 +168,25 @@ class Matchmaking(commands.Cog):
 		for game_name in games:
 			await self.set_wait_until(ctx, game_name, 0)
 		await ctx.tick()
+
+	@matchmaking.command()
+	@checks.guildowner_or_permissions(administrator=True)
+	async def vccheck (self, ctx: commands.Context, state:bool=None):
+		"""Enable or Disable command for users in voicechannel only."""
+		check_vc = await self.get_check_vc(ctx)
+
+		if state is None:
+			if check_vc is None or not check_vc:
+				state = True
+			else:
+				state = False
+
+		if check_vc == state:
+			await ctx.send(f'The current state to check if user is in voicechannel is already set to `{check_vc}`.')
+			return
+
+		await self.set_check_vc(ctx, state)
+		await ctx.send(f'Voicechannel check is set to `{state}`')
 
 	#===========================Fucntion to haddle stuff========================
 	async def find_game_name(self, ctx, games, game_name):
@@ -354,3 +377,20 @@ class Matchmaking(commands.Cog):
 
 		await self.config.guild(ctx.guild).games.set(games)
 		self.games.update({guild_id:games})
+
+	#---------------------------------check_vc----------------------------------
+	async def get_check_vc(self, ctx):
+		guild_id = str(ctx.guild.id)
+		check_vc = self.check_vc.get(guild_id)
+
+		if check_vc is None:
+			guild_group = self.config.guild(ctx.guild)
+			check_vc = await guild_group.check_vc()
+			self.check_vc.update({guild_id:check_vc})
+
+		return check_vc
+
+	async def set_check_vc(self, ctx, bool):
+		guild_id = str(ctx.guild.id)
+		await self.config.guild(ctx.guild).check_vc.set(bool)
+		self.check_vc.update({guild_id:bool})
