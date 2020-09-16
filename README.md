@@ -8,7 +8,7 @@ Once you have added ObliCogs to your instance you're free to install the followi
 ### Matchmaking 🆕
 > This cog allows members to ping other members for a certain game @role and limits the amount usage with a given cooldown. <br />
 `[p]cog install ObliCogs matchmaking` <br />
-> _Credits to **@XargsUK**_
+> Credits to @XargsUK
 
 ### Roleshop 🚧
 > This cog create a role shop message where members can react on to buy a role with there credits. <br />
