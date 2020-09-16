@@ -51,7 +51,7 @@ class Matchmaking(commands.Cog):
 
 		#----------------Check if member is in Voice Channel--------------------
 		if await self.get_check_vc(ctx) and ctx.author.voice is None:
-			return await ctx.send('You must first join a voice channel before you can use this command.')
+			return await ctx.send('You must first join a voicechannel before you can use this command.')
 
 		#------------Locking command at guild level to disable spam ping---------
 		guild_id = str(ctx.guild.id)
