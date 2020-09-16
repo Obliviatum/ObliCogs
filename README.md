@@ -15,4 +15,4 @@ Once you have added ObliCogs to your instance you're free to install the followi
 `[p]cog install ObliCogs roleshop` <br />
 <details><summary>Example Image</summary> <img src="screenshots/roleshop/example_roleshop_message.PNG" width="380" /> </details>
 
-_🚧 Inconstruction | 🆕 New_
+_🚧 Under Construction | 🆕 New_
