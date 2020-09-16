@@ -2,7 +2,7 @@
     "author" : "Obliviatum",
     "description" : "This cog allows members to ping other members for a certain game & @role.",
     "disabled" : false,
-    "end_user_data_statement" : "This cog allows members to ping other members for a certain game & @role.",
+    "end_user_data_statement" : "This cog does not persistently store data or metadata about users.",
     "hidden" : false,
     "install_msg" : "This cog allows members to ping other members for a certain game & @role.",
     "max_bot_version" : "0.0.0",
