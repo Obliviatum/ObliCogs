@@ -25,7 +25,7 @@ class PluralDict(dict):
 
 class Matchmaking(commands.Cog):
 
-	__version__ = "1.0.6"
+	__version__ = "1.0.7"
 	__author__ = "Obliviatum"
 
 	def __init__(self, bot: Red):
@@ -136,6 +136,11 @@ class Matchmaking(commands.Cog):
 				if playing != game_name:
 					self.unlock_command(ctx)
 					return await ctx.send(f'You\'re not currently playing `{game_name}`, but playing `{playing}`.')
+
+			#-----------------Check if member has game role---------------------
+			if role not in member.roles:
+				self.unlock_command(ctx)
+				return await ctx.send(f'You need to have {role.mention} before you can use this command for `{game_name}`.')
 
 
 		#-----------------Check if game command is on Cooldown------------------
