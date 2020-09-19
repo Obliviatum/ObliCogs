@@ -25,7 +25,7 @@ class PluralDict(dict):
 
 class Matchmaking(commands.Cog):
 
-	__version__ = "1.0.5"
+	__version__ = "1.0.6"
 	__author__ = "Obliviatum"
 
 	def __init__(self, bot: Red):
@@ -86,18 +86,29 @@ class Matchmaking(commands.Cog):
 			self.unlock_command(ctx)
 			return await self.send_game_list(ctx)
 
-		#----------Check if member.id or member.roles is on denylist------------
-		denylist =  await self.get_settings(ctx, 'denylist')
-		if member.id in denylist.get('users') or [r for r in [mr.id for mr in member.roles] if r in denylist.get('roles')]:
+		#---------------------Get role_object from game-------------------------
+		role_id = games.get(game_name).get('role_id')
+		role = discord.utils.find(lambda r: r.id == role_id, ctx.guild.roles)
+
+		if role is None:
+			# if role is None then it doesn't exist anymore
 			self.unlock_command(ctx)
-			return await ctx.send(f'Sorry {member.mention}, you\'re not allowed to run this command. Contact a moderator for more information.')
+			return await ctx.send('Well, I found the game, but the corresponding @role doesn\'t exists anymore. Please contact a moderator for more information.')
 
 		#---------Check if member.id or member.roles is on allowlist------------
 		allowlist =  await self.get_settings(ctx, 'allowlist')
-		if member.id not in allowlist.get('users') or not [r for r in [mr.id for mr in member.roles] if r in allowlist.get('roles')]:
-			# check = True # Not on allowlist, so whill run more checks on member.
-		# else:
-		# 	check = False # On allowlist, so whill skip checks on member.
+		usercheck =  member.id in allowlist.get('users')
+		rolecheck = [r for r in [mr.id for mr in member.roles] if r in allowlist.get('roles')]
+		on_allow_list = any([usercheck, rolecheck])
+		if not on_allow_list:
+			#---------Check if member.id or member.roles is on denylist---------
+			denylist =  await self.get_settings(ctx, 'denylist')
+			usercheck =  member.id in denylist.get('users')
+			rolecheck = [r for r in [mr.id for mr in member.roles] if r in denylist.get('roles')]
+			on_deny_list = any([usercheck, rolecheck])
+			if on_deny_list:
+				self.unlock_command(ctx)
+				return await ctx.send(f'Sorry {member.mention}, you\'re not allowed to run this command. Contact a moderator for more information.')
 
 			#---------------Check if member is in Voice Channel-----------------
 			if await self.get_settings(ctx, 'check_vc') is True and member.voice is None:
@@ -132,16 +143,6 @@ class Matchmaking(commands.Cog):
 		if wait_until > time.time():
 			self.unlock_command(ctx)
 			return await self.send_cooldown_message(ctx, game_name, wait_until)
-
-		role_id = games.get(game_name).get('role_id')
-
-		#---------------------Get role_object from game-------------------------
-		role = discord.utils.find(lambda r: r.id == role_id, ctx.guild.roles)
-
-		if role is None:
-			# if role is None then it doesn't exist anymore
-			self.unlock_command(ctx)
-			return await ctx.send('Well, I found the game, but the corresponding @role doesn\'t exists anymore')
 
 		#--------------------Mention players for matchmaking--------------------
 		await self.set_wait_until(ctx, game_name)
