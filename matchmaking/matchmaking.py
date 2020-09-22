@@ -10,22 +10,11 @@ from redbot.core import checks, commands, Config
 from redbot.core.bot import Red
 from redbot.core.utils.predicates import ReactionPredicate
 from redbot.core.utils.menus import start_adding_reactions
-
-# Thanks stack overflow http://stackoverflow.com/questions/21872366/plural-string-formatting
-class PluralDict(dict):
-	def __missing__(self, key):
-		if '(' in key and key.endswith(')'):
-			key, rest = key.split('(', 1)
-			value = super().__getitem__(key)
-			suffix = rest.rstrip(')').split(',')
-			if len(suffix) == 1:
-				suffix.insert(0, '')
-			return suffix[0] if value <= 1 else suffix[1]
-		raise KeyError(key)
+# from redbot.core.utils.chat_formatting import humanize_list
 
 class Matchmaking(commands.Cog):
 
-	__version__ = "1.0.7"
+	__version__ = "1.0.8"
 	__author__ = "Obliviatum"
 
 	def __init__(self, bot: Red):
@@ -313,19 +302,13 @@ class Matchmaking(commands.Cog):
 			text += 'Roles:\n'
 			for role_id in rolelist:
 				role = discord.utils.find(lambda r: r.id == role_id, ctx.guild.roles)
-				if role:
-					text += f'{role.mention}\n'
-				else:
-					text += f'<@&{role_id}> ID:{role_id}\n'
+				text += f'{role.mention}\n' if role else f'<@&{role_id}> ID:{role_id}\n'
 
 		if userlist:
 			text += 'Users:\n'
 			for user_id in userlist:
 				user = discord.utils.find(lambda u: u.id == user_id, ctx.guild.members)
-				if user:
-					text += f'{user.mention}\n'
-				else:
-					text += f'<@{user_id}> ID:{user_id}\n'
+				text += f'{user.mention}\n' if user else f'<@{user_id}> ID:{user_id}\n'
 
 		await ctx.send(text, allowed_mentions=self.DM)
 
@@ -377,19 +360,13 @@ class Matchmaking(commands.Cog):
 			text += 'Roles:\n'
 			for role_id in rolelist:
 				role = discord.utils.find(lambda r: r.id == role_id, ctx.guild.roles)
-				if role:
-					text += f'{role.mention}\n'
-				else:
-					text += f'<@&{role_id}> ID:{role_id}\n'
+				text += f'{role.mention}\n' if role else f'<@&{role_id}> ID:{role_id}\n'
 
 		if userlist:
 			text += 'Users:\n'
 			for user_id in userlist:
 				user = discord.utils.find(lambda u: u.id == user_id, ctx.guild.members)
-				if user:
-					text += f'{user.mention}\n'
-				else:
-					text += f'<@{user_id}> ID:{user_id}\n'
+				text += f'{user.mention}\n' if user else f'<@{user_id}> ID:{user_id}\n'
 
 		await ctx.send(text, allowed_mentions=self.DM)
 
@@ -410,7 +387,7 @@ class Matchmaking(commands.Cog):
 			if activity.type is discord.ActivityType.playing:
 				return await ctx.send(f'{member} is playing {activity.name}.')
 
-		await ctx.send(f'I see {member} is playing a game.')
+		await ctx.send(f'I see some activity on {member}, but no game activity.')
 
 
 	#===========================Fucntion to haddle stuff========================
@@ -494,30 +471,27 @@ class Matchmaking(commands.Cog):
 		self.lockcommand.update({guild_id:False})
 
 	@staticmethod
-	def time_format(seconds):
-		m, s = divmod(seconds, 60)
-		h, m = divmod(m, 60)
-		data = PluralDict({'hour': h, 'minute': m, 'second': s})
-		if h > 0:
-			fmt = "{hour} hour{hour(s)}"
-			if data["minute"] > 0 and data["second"] > 0:
-				fmt += ", {minute} minute{minute(s)}, and {second} second{second(s)}"
-			if data["second"] > 0 == data["minute"]:
-				fmt += ", and {second} second{second(s)}"
-			msg = fmt.format_map(data)
-		elif h == 0 and m > 0:
-			if data["second"] == 0:
-				fmt = "{minute} minute{minute(s)}"
-			else:
-				fmt = "{minute} minute{minute(s)}, and {second} second{second(s)}"
-			msg = fmt.format_map(data)
-		elif m == 0 and h == 0 and s > 0:
-			fmt = "{second} second{second(s)}"
-			msg = fmt.format_map(data)
-		else:
-			msg = "No Cooldown"
-		return msg
+	def time_format(seconds: int):
+		if seconds:
+			h, r = divmod(seconds, 60 * 60)
+			m, s = divmod(r, 60)
+			data = {'hour':h, 'minute':m, 'second':s}
 
+			times = [
+				f'{v} {k}' + ('s' if v > 1 else '')
+				for k, v in data.items()
+				if v != 0
+			]
+
+			for i in range(-len(times)+1, 0):
+				times.insert(i, ' and ' if i == -1 else ', ')
+			msg = ''.join(times)
+
+			# msg = humanize_list(times)
+		else:
+			msg = 'No Cooldown'
+
+		return msg
 
 	#==============================Caching Function=============================
 	#-----------------------------------Games-----------------------------------
