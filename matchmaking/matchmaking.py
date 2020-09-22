@@ -14,7 +14,7 @@ from redbot.core.utils.menus import start_adding_reactions
 
 class Matchmaking(commands.Cog):
 
-	__version__ = "1.0.8"
+	__version__ = "1.0.9"
 	__author__ = "Obliviatum"
 
 	def __init__(self, bot: Red):
@@ -84,21 +84,22 @@ class Matchmaking(commands.Cog):
 			self.unlock_command(ctx)
 			return await ctx.send('Well, I found the game, but the corresponding @role doesn\'t exists anymore. Please contact a moderator for more information.')
 
+		#---------Check if member.id or member.roles is on denylist---------
+		denylist =  await self.get_settings(ctx, 'denylist')
+		usercheck =  member.id in denylist.get('users')
+		rolecheck = [r for r in [mr.id for mr in member.roles] if r in denylist.get('roles')]
+		on_deny_list = any([usercheck, rolecheck])
+		if on_deny_list:
+			self.unlock_command(ctx)
+			return await ctx.send(f'Sorry {member.mention}, you\'re not allowed to run this command. Contact a moderator for more information.')
+
 		#---------Check if member.id or member.roles is on allowlist------------
 		allowlist =  await self.get_settings(ctx, 'allowlist')
 		usercheck =  member.id in allowlist.get('users')
 		rolecheck = [r for r in [mr.id for mr in member.roles] if r in allowlist.get('roles')]
 		on_allow_list = any([usercheck, rolecheck])
 		if not on_allow_list:
-			#---------Check if member.id or member.roles is on denylist---------
-			denylist =  await self.get_settings(ctx, 'denylist')
-			usercheck =  member.id in denylist.get('users')
-			rolecheck = [r for r in [mr.id for mr in member.roles] if r in denylist.get('roles')]
-			on_deny_list = any([usercheck, rolecheck])
-			if on_deny_list:
-				self.unlock_command(ctx)
-				return await ctx.send(f'Sorry {member.mention}, you\'re not allowed to run this command. Contact a moderator for more information.')
-
+			# This part will be skipped is on allowlist
 			#---------------Check if member is in Voice Channel-----------------
 			if await self.get_settings(ctx, 'check_vc') is True and member.voice is None:
 				self.unlock_command(ctx)
