@@ -1,5 +1,7 @@
 {
-    "author" : "Obliviatum",
+    "author": [
+        "Obliviatum (Obliviatum#1892)"
+    ],
     "description" : "This cog allows members to ping other members for a certain game & @role.",
     "disabled" : false,
     "end_user_data_statement" : "This cog does not persistently store data or metadata about users.",
