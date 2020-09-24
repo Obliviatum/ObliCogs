@@ -111,7 +111,7 @@ class Matchmaking(commands.Cog):
 
 				if activities is None:
 					self.unlock_command(ctx)
-					return await ctx.send(f'I can\'t see see any activity on you {member.mention}. Either your game is not open or you will need to share your game activity before you can use this command.')
+					return await ctx.send(f'I can\'t see your activity, {member.mention}. Either your game is not open or you will need to share your game activity before you can use this command.')
 
 				playing = None
 				for activity in activities:
@@ -153,7 +153,7 @@ class Matchmaking(commands.Cog):
 		"""Add a game with corresponding @role to a list."""
 		games = await self.get_games(ctx)
 		if game_name in games:
-			return await ctx.send(f'The game `{game_name}` has already been added to list.')
+			return await ctx.send(f'The game `{game_name}` is already on the list.')
 
 		await self.add_game(ctx, game_name, role)
 		await ctx.tick()
@@ -179,7 +179,7 @@ class Matchmaking(commands.Cog):
 			return await self.send_setting_games(ctx)
 
 		if not game_name:
-			return await ctx.send(f'You didn\'t give me a name of a game. Please run `{ctx.prefix}cooldown {cooldown} <game_name>`')
+			return await ctx.send(f'You didn\'t specify a game. Please run `{ctx.prefix}cooldown {cooldown} <game_name>`')
 
 		games = await self.get_games(ctx)
 		if game_name not in games:
@@ -188,11 +188,11 @@ class Matchmaking(commands.Cog):
 		pref_cooldown = await self.get_cooldown(ctx, game_name)
 		if not cooldown:
 			time_fmt = self.time_format(pref_cooldown)
-			return await ctx.send(f'The current cooldown is set to: {time_fmt}')
+			return await ctx.send(f'The current cooldown for {game_name} is set to: {time_fmt}')
 
 		await self.set_cooldown(ctx, game_name, cooldown)
 		time_fmt = self.time_format(cooldown)
-		await ctx.send(f'The cooldown been changed to: {time_fmt}')
+		await ctx.send(f'The cooldown has been changed to: {time_fmt}')
 
 	@matchmaking.command()
 	@checks.guildowner_or_permissions(administrator=True)
@@ -221,7 +221,7 @@ class Matchmaking(commands.Cog):
 	@matchmaking.command()
 	@checks.guildowner_or_permissions(administrator=True)
 	async def vccheck(self, ctx: commands.Context, state:bool=None):
-		"""Enable or Disable restriction for users in voice channel."""
+		"""Enable or Disable the requirement for users to be in a voice channel."""
 		check_vc = await self.get_settings(ctx, 'check_vc')
 
 		if state is None:
@@ -239,7 +239,7 @@ class Matchmaking(commands.Cog):
 	@matchmaking.command()
 	@checks.guildowner_or_permissions(administrator=True)
 	async def gncheck(self, ctx: commands.Context, state:bool=None):
-		"""Enable or Disable restriction for users with game name as activity."""
+		"""Enable or Disable the requirement for users to have the game name in their activity."""
 		check_gn = await self.get_settings(ctx, 'check_gn')
 
 		if state is None:
@@ -249,7 +249,7 @@ class Matchmaking(commands.Cog):
 				state = False
 
 		if check_gn == state:
-			return await ctx.send(f'The current state to check if user is playing the game is already set to `{check_gn}`.')
+			return await ctx.send(f'The game name activity check is already set to `{check_gn}`.')
 
 		await self.add_settings(ctx, 'check_gn', state)
 		await ctx.send(f'Game name activity check is set to `{state}`')
@@ -267,7 +267,7 @@ class Matchmaking(commands.Cog):
 		key = 'allowlist'
 		check = await self.check_settings(ctx, key, role_or_user)
 		if not check:
-			return await ctx.send(f'You need to remove {role_or_user.mention} from denylist before you can add to allowlist. '
+			return await ctx.send(f'You will need to remove {role_or_user.mention} from denylist before you can add to allowlist. '
 								  f'Use `{ctx.prefix}mm allowlist del {role_or_user.mention}` to do so.', allowed_mentions=self.DM)
 
 		result = await self.add_settings(ctx, key, role_or_user)
@@ -326,7 +326,7 @@ class Matchmaking(commands.Cog):
 		key = 'denylist'
 		check = await self.check_settings(ctx, key, role_or_user)
 		if not check:
-			return await ctx.send(f'You need to remove {role_or_user.mention} from the allowlist before you can add them to the denylist. '
+			return await ctx.send(f'You will need to remove {role_or_user.mention} from the allowlist before you can add them to the denylist. '
 								  f'Use `{ctx.prefix}mm allowlist del {role_or_user.mention}` to do so.', allowed_mentions=self.DM)
 
 		result = await self.add_settings(ctx, key, role_or_user)
