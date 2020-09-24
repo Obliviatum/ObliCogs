@@ -28,8 +28,8 @@ class Matchmaking(commands.Cog):
 		defaul_guild = {
 			'games':{},
 			'settings':{
-				'check_vc':None, # Check connected to voice channel
-				'check_gn':None, # Check game name activity
+				'check_vc':None, # Checks that the user is connected to voice channel
+				'check_gn':None, # Checks users game name activity 
 				'allowlist':{
 					'users':[], # List of user.id
 					'roles':[], # List of role.id
@@ -54,11 +54,11 @@ class Matchmaking(commands.Cog):
 		"""Let players know you wanna play a certain multiplayer game."""
 		member: discord.Member = ctx.author
 
-		#----Check if member did pass a game_name else return a list of game----
+		#----Check if member did pass a game_name else return a list of games----
 		if game_name is None:
 			return await self.send_game_list(ctx)
 
-		#----------------Check if bot got permission to mention-----------------
+		#----------------Check if bot has permission to mention-----------------
 		if not ctx.channel.permissions_for(ctx.me).mention_everyone:
 			return await ctx.send('I require the "Mention Everyone" permission to execute that command.')
 
@@ -66,7 +66,7 @@ class Matchmaking(commands.Cog):
 		if self.lock_command(ctx):
 			return await ctx.send('Someone else is current using this command. Please wait and retry soon.')
 
-		#-----------------------Check if game in list---------------------------
+		#-----------------------Check if game is in list-------------------------
 		games = await self.get_games(ctx)
 		game_name = game_name if game_name in games else await self.find_game_name(ctx, game_name)
 
@@ -111,7 +111,7 @@ class Matchmaking(commands.Cog):
 
 				if activities is None:
 					self.unlock_command(ctx)
-					return await ctx.send(f'Don\'t see any activity on you {member.mention}. Either you have to start the game or share your game activity before you can use this command.')
+					return await ctx.send(f'I can\'t see see any activity on you {member.mention}. Either your game is not open or you will need to share your game activity before you can use this command.')
 
 				playing = None
 				for activity in activities:
@@ -121,7 +121,7 @@ class Matchmaking(commands.Cog):
 
 				if playing is None:
 					self.unlock_command(ctx)
-					return await ctx.send(f'Don\'t see you\'re playing a game {member.mention}. Either you have to start the game or share your game activity before you can use this command.')
+					return await ctx.send(f'I can\' see if you\'re playing a game {member.mention}. Either your game is not open or you will need to share your game activity before you can use this command.')
 
 				if playing != game_name:
 					self.unlock_command(ctx)
@@ -153,7 +153,7 @@ class Matchmaking(commands.Cog):
 		"""Add a game with corresponding @role to a list."""
 		games = await self.get_games(ctx)
 		if game_name in games:
-			return await ctx.send(f'The game `{game_name}` already has been added to list.')
+			return await ctx.send(f'The game `{game_name}` has already been added to list.')
 
 		await self.add_game(ctx, game_name, role)
 		await ctx.tick()
@@ -164,7 +164,7 @@ class Matchmaking(commands.Cog):
 		"""Delete a game from the list."""
 		games = await self.get_games(ctx)
 		if game_name not in games:
-			return await ctx.send(f'The game `{game_name}` doesn\'t exists on the list.')
+			return await ctx.send(f'The game `{game_name}` doesn\'t exist on the list.')
 
 		await self.del_game(ctx, game_name)
 		await ctx.tick()
@@ -172,18 +172,18 @@ class Matchmaking(commands.Cog):
 	@matchmaking.command()
 	@checks.guildowner_or_permissions(administrator=True)
 	async def cooldown(self, ctx: commands.Context, cooldown:int=None, *, game_name:str=None):
-		"""Manage the duration for command cooldown in seconds for each game"""
+		"""Manage the duration for command cooldown, in seconds, for each game"""
 
 		if (cooldown and game_name) is None:
 			# retuen list of games and there info
 			return await self.send_setting_games(ctx)
 
 		if not game_name:
-			return await ctx.send(f'You didn\'t give me a name of a game. Please `{ctx.prefix}cooldown {cooldown} <game_name>`')
+			return await ctx.send(f'You didn\'t give me a name of a game. Please run `{ctx.prefix}cooldown {cooldown} <game_name>`')
 
 		games = await self.get_games(ctx)
 		if game_name not in games:
-			return await ctx.send(f'The game `{game_name}` doesn\'t exists on the list.')
+			return await ctx.send(f'The game `{game_name}` doesn\'t exist on the list.')
 
 		pref_cooldown = await self.get_cooldown(ctx, game_name)
 		if not cooldown:
@@ -205,11 +205,11 @@ class Matchmaking(commands.Cog):
 	@matchmaking.command()
 	@checks.guildowner_or_permissions(administrator=True)
 	async def resetcooldown(self, ctx: commands.Context, *, game_name:str=None):
-		"""This will reset cooldown for a given game or all games if no game is given"""
+		"""This will reset cooldown for a given game or all games if no game is specified"""
 		games = await self.get_games(ctx)
 		if game_name is not None:
 			if game_name not in games:
-				return await ctx.send(f'The game `{game_name}` doesn\'t exists on the list.')
+				return await ctx.send(f'The game `{game_name}` doesn\'t exist on the list.')
 			await self.set_wait_until(ctx, game_name, 0)
 			await ctx.tick()
 			return
@@ -221,7 +221,7 @@ class Matchmaking(commands.Cog):
 	@matchmaking.command()
 	@checks.guildowner_or_permissions(administrator=True)
 	async def vccheck(self, ctx: commands.Context, state:bool=None):
-		"""Enable or Disable command restriction for users in voicechannel only."""
+		"""Enable or Disable restriction for users in voice channel."""
 		check_vc = await self.get_settings(ctx, 'check_vc')
 
 		if state is None:
@@ -231,15 +231,15 @@ class Matchmaking(commands.Cog):
 				state = False
 
 		if check_vc == state:
-			return await ctx.send(f'The current state to check if user is in voicechannel is already set to `{check_vc}`.')
+			return await ctx.send(f'Voice channel check is already set to `{check_vc}`.')
 
 		await self.add_settings(ctx, 'check_vc', state)
-		await ctx.send(f'Voicechannel check is set to `{state}`')
+		await ctx.send(f'Voice channel check is set to `{state}`')
 
 	@matchmaking.command()
 	@checks.guildowner_or_permissions(administrator=True)
 	async def gncheck(self, ctx: commands.Context, state:bool=None):
-		"""Enable or Disable command restriction for users with game name as activity."""
+		"""Enable or Disable restriction for users with game name as activity."""
 		check_gn = await self.get_settings(ctx, 'check_gn')
 
 		if state is None:
@@ -263,33 +263,33 @@ class Matchmaking(commands.Cog):
 
 	@matchmaking_allowlist.command(name="add")
 	async def matchmaking_allowlist_add(self, ctx: commands.Context, *, role_or_user: Union[discord.Role, discord.User]):
-		"""Add a role or user to allowlist."""
+		"""Add a role or user to the allowlist."""
 		key = 'allowlist'
 		check = await self.check_settings(ctx, key, role_or_user)
 		if not check:
-			return await ctx.send(f'You first have to remove {role_or_user.mention} from denylist before you can add to allowlist. '
+			return await ctx.send(f'You need to remove {role_or_user.mention} from denylist before you can add to allowlist. '
 								  f'Use `{ctx.prefix}mm allowlist del {role_or_user.mention}` to do so.', allowed_mentions=self.DM)
 
 		result = await self.add_settings(ctx, key, role_or_user)
 		if result:
-			await ctx.send(f'{role_or_user.mention} has been succesfull added to {key}.', allowed_mentions=self.DM)
+			await ctx.send(f'{role_or_user.mention} has been successfully added to the {key}.', allowed_mentions=self.DM)
 		else:
-			await ctx.send(f'{role_or_user.mention} has already been added to {key}', allowed_mentions=self.DM)
+			await ctx.send(f'{role_or_user.mention} is already on the {key}', allowed_mentions=self.DM)
 
 	@matchmaking_allowlist.command(name="del")
 	async def matchmaking_allowlist_del(self, ctx: commands.Context, *, role_or_user: Union[discord.Role, discord.User]):
-		"""Delete a role or user from allowlist."""
+		"""Delete a role or user from the allowlist."""
 		key = 'allowlist'
 		result = await self.del_settings(ctx, key, role_or_user)
 
 		if result:
-			await ctx.send(f'{role_or_user.mention} has been succesfull deleted from {key}.', allowed_mentions=self.DM)
+			await ctx.send(f'{role_or_user.mention} has been successfully deleted from the {key}.', allowed_mentions=self.DM)
 		else:
-			await ctx.send(f'{role_or_user.mention} has already been deleted from {key}', allowed_mentions=self.DM)
+			await ctx.send(f'{role_or_user.mention} is not currently on the {key}', allowed_mentions=self.DM)
 
 	@matchmaking_allowlist.command(name="list")
 	async def matchmaking_allowlist_list(self, ctx: commands.Context):
-		"""Return roles and user on allowlist."""
+		"""Return roles and users on the allowlist."""
 		allowlist = await self.get_settings(ctx, 'allowlist')
 		rolelist = allowlist.get('roles', [])
 		userlist = allowlist.get('users', [])
@@ -326,14 +326,14 @@ class Matchmaking(commands.Cog):
 		key = 'denylist'
 		check = await self.check_settings(ctx, key, role_or_user)
 		if not check:
-			return await ctx.send(f'You first have to remove {role_or_user.mention} from allowlist before you can add to denylist. '
+			return await ctx.send(f'You need to remove {role_or_user.mention} from the allowlist before you can add them to the denylist. '
 								  f'Use `{ctx.prefix}mm allowlist del {role_or_user.mention}` to do so.', allowed_mentions=self.DM)
 
 		result = await self.add_settings(ctx, key, role_or_user)
 		if result:
-			await ctx.send(f'{role_or_user.mention} has been succesfull added to {key}.', allowed_mentions=self.DM)
+			await ctx.send(f'{role_or_user.mention} has been successfully added to the {key}.', allowed_mentions=self.DM)
 		else:
-			await ctx.send(f'{role_or_user.mention} has already been added to {key}', allowed_mentions=self.DM)
+			await ctx.send(f'{role_or_user.mention} is already on the {key}', allowed_mentions=self.DM)
 
 	@matchmaking_denylist.command(name="del")
 	async def matchmaking_denylist_del(self, ctx: commands.Context, *, role_or_user: Union[discord.Role, discord.User]):
@@ -341,9 +341,9 @@ class Matchmaking(commands.Cog):
 		key = 'denylist'
 		result = await self.del_settings(ctx, key, role_or_user)
 		if result:
-			await ctx.send(f'{role_or_user.mention} has been succesfull deleted from {key}.', allowed_mentions=self.DM)
+			await ctx.send(f'{role_or_user.mention} has been successfully deleted to the {key}.', allowed_mentions=self.DM)
 		else:
-			await ctx.send(f'{role_or_user.mention} has already been deleted from {key}', allowed_mentions=self.DM)
+			await ctx.send(f'{role_or_user.mention} is not on the {key}', allowed_mentions=self.DM)
 
 	@matchmaking_denylist.command(name="list")
 	async def matchmaking_denylist_list(self, ctx: commands.Context):
@@ -391,7 +391,7 @@ class Matchmaking(commands.Cog):
 		await ctx.send(f'I see some activity on {member}, but no game activity.')
 
 
-	#===========================Fucntion to haddle stuff========================
+	#===========================Function to handle stuff========================
 	async def find_game_name(self, ctx, game_name):
 		games = await self.get_games(ctx)
 		match = get_close_matches(game_name, games.keys(), 1, 0.3)
@@ -407,7 +407,7 @@ class Matchmaking(commands.Cog):
 			pred = ReactionPredicate.yes_or_no(msg, ctx.author)
 			await ctx.bot.wait_for("reaction_add", check=pred, timeout=15)
 		except asyncio.TimeoutError:
-			await ctx.send("You didn\'t react in time, canceling.")
+			await ctx.send("You didn\'t react in time, cancelled.")
 
 		try: # Delete reactions from question message
 			if ctx.channel.permissions_for(ctx.me).manage_messages:
@@ -437,7 +437,7 @@ class Matchmaking(commands.Cog):
 
 		#---------------------Check if there is a list of game------------------
 		if games is None:
-			return await ctx.send("There are current no games added to the list.")
+			return await ctx.send("There are currently no games on the list.")
 
 		#---------------------Create a game ifno message------------------------
 		txt = '>>> **Games settings list:**\n'
