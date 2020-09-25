@@ -14,7 +14,7 @@ from redbot.core.utils.menus import start_adding_reactions
 
 class Matchmaking(commands.Cog):
 
-	__version__ = "1.0.9"
+	__version__ = "1.0.10"
 	__author__ = "Obliviatum"
 
 	def __init__(self, bot: Red):
@@ -111,7 +111,7 @@ class Matchmaking(commands.Cog):
 
 				if activities is None:
 					self.unlock_command(ctx)
-					return await ctx.send(f'I can\'t see your activity, {member.mention}. Either your game is not open or you will need to share your game activity before you can use this command.')
+					return await ctx.send(f'I can\'t see your activity, {member.mention}. Either your game is not running or you will need to share your game activity before you can use this command.')
 
 				playing = None
 				for activity in activities:
@@ -121,7 +121,7 @@ class Matchmaking(commands.Cog):
 
 				if playing is None:
 					self.unlock_command(ctx)
-					return await ctx.send(f'I can\' see if you\'re playing a game {member.mention}. Either your game is not open or you will need to share your game activity before you can use this command.')
+					return await ctx.send(f'I can\' see if you\'re playing a game {member.mention}. Either your game is not running or you will need to share your game activity before you can use this command.')
 
 				if playing != game_name:
 					self.unlock_command(ctx)
