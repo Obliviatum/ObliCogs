@@ -643,7 +643,7 @@ class Matchmaking(commands.Cog):
 		settings = await self.get_settings(ctx)
 
 		if key in ['allowlist', 'denylist']:
-			otherkey = 'allowlist' if key is 'denylist' else 'denylist'
+			otherkey = 'allowlist' if key == 'denylist' else 'denylist'
 			if isinstance(value, discord.Role):
 				skey = 'roles'
 			elif isinstance(value, discord.User):
