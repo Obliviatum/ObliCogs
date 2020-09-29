@@ -429,7 +429,7 @@ class Matchmaking(commands.Cog):
 			return await ctx.send("There are currently no games on the list.")
 
 		#---------------------Create a game list message------------------------
-		name_games = [n for n in games.keys()]
+		name_games = games.keys()
 		await ctx.send('>>> **Games list:**\n' + '\n'.join(name_games))
 
 	async def send_setting_games(self, ctx):
